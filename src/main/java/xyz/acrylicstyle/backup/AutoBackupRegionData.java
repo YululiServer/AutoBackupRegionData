@@ -26,7 +26,6 @@ public class AutoBackupRegionData extends JavaPlugin implements Listener {
         keepFiles = config.getInt("keepFiles", 14); // 2 weeks
         Bukkit.getPluginManager().registerEvents(this, this);
         new BukkitRunnable() {
-            @SuppressWarnings("ResultOfMethodCallIgnored")
             @Override
             public void run() {
                 Log.info("regionデータをバックアップしています...");
@@ -46,16 +45,27 @@ public class AutoBackupRegionData extends JavaPlugin implements Listener {
                         }
                     });
                 }
-                File src = new File("./world/region");
-                File dest = new File("./backupregiondata/" + new Date().getTime() + "/");
-                dest.mkdirs();
-                try {
-                    FileUtils.copyDirectoryToDirectory(src, dest);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                Log.info("regionデータのバックアップが完了しました。");
+                backup();
             }
-        }.runTaskTimerAsynchronously(this, period * 60 * 60 * 20, period * 60 * 60 * 20);
+        }.runTaskTimerAsynchronously(this, 1, period * 60 * 60 * 20);
+    }
+
+    @Override
+    public void onDisable() {
+        Log.info("regionデータをバックアップしています...");
+        backup();
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private void backup() {
+        File src = new File("./world/region");
+        File dest = new File("./backupregiondata/" + new Date().getTime() + "/");
+        dest.mkdirs();
+        try {
+            FileUtils.copyDirectoryToDirectory(src, dest);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Log.info("regionデータのバックアップが完了しました。");
     }
 }
