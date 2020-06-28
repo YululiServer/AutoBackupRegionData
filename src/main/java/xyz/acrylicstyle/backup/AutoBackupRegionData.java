@@ -4,9 +4,9 @@ import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import util.CollectionList;
 import util.ICollectionList;
+import util.Watchdog;
 import xyz.acrylicstyle.tomeito_api.providers.ConfigProvider;
 import xyz.acrylicstyle.tomeito_api.utils.Log;
 
@@ -25,34 +25,37 @@ public class AutoBackupRegionData extends JavaPlugin implements Listener {
         period = config.getInt("delayHour", 24); // 1 day
         keepFiles = config.getInt("keepFiles", 14); // 2 weeks
         Bukkit.getPluginManager().registerEvents(this, this);
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                Log.info("regionデータをバックアップしています...");
-                File folder = new File("./backupregiondata");
-                if (folder.listFiles() != null) {
-                    CollectionList<File> files = ICollectionList.asList(folder.listFiles());
-                    files.sort(Comparator.comparingLong(File::lastModified));
-                    files.sort(Comparator.reverseOrder());
-                    files.foreach((file, i) -> {
-                        if (i > keepFiles) {
-                            Log.info("Deleting " + file.getAbsolutePath());
-                            try {
-                                FileUtils.deleteDirectory(file);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-                }
-                backup();
-            }
-        }.runTaskTimerAsynchronously(this, 1, period * 60 * 60 * 20);
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, this::doBackup, 1, period * 60 * 60 * 20);
+        doBackupAsync();
     }
 
     @Override
     public void onDisable() {
+        new Watchdog("AutoBackupRegionData::doBackup", this::doBackup, 1000*30).startAwait(); // 30 seconds of timeout
+    }
+
+    private void doBackupAsync() {
+        Bukkit.getScheduler().runTaskAsynchronously(this, this::doBackup);
+    }
+
+    private void doBackup() {
         Log.info("regionデータをバックアップしています...");
+        File folder = new File("./backupregiondata");
+        if (folder.listFiles() != null) {
+            CollectionList<File> files = ICollectionList.asList(folder.listFiles());
+            files.sort(Comparator.comparingLong(File::lastModified));
+            files.sort(Comparator.reverseOrder());
+            files.foreach((file, i) -> {
+                if (i > keepFiles) {
+                    Log.info("Deleting " + file.getAbsolutePath());
+                    try {
+                        FileUtils.deleteDirectory(file);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
         backup();
     }
 
