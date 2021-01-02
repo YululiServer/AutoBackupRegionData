@@ -4,7 +4,6 @@ import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import util.CollectionList;
 import util.ICollectionList;
 import util.Watchdog;
 import xyz.acrylicstyle.tomeito_api.providers.ConfigProvider;
@@ -12,7 +11,8 @@ import xyz.acrylicstyle.tomeito_api.utils.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Comparator;
+import java.util.Date;
 
 public class AutoBackupRegionData extends JavaPlugin implements Listener {
     public static ConfigProvider config = null;
@@ -25,7 +25,7 @@ public class AutoBackupRegionData extends JavaPlugin implements Listener {
         period = config.getInt("delayHour", 24); // 1 day
         keepFiles = config.getInt("keepFiles", 14); // 2 weeks
         Bukkit.getPluginManager().registerEvents(this, this);
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, this::doBackup, 1, period * 60 * 60 * 20);
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, this::doBackup, 1, (long) period * 60 * 60 * 20);
         doBackupAsync();
     }
 
@@ -42,7 +42,7 @@ public class AutoBackupRegionData extends JavaPlugin implements Listener {
         Log.info("regionデータをバックアップしています...");
         File folder = new File("./backupregiondata");
         if (folder.listFiles() != null) {
-            CollectionList<File> files = ICollectionList.asList(folder.listFiles());
+            ICollectionList<File> files = ICollectionList.asList(folder.listFiles());
             files.sort(Comparator.comparingLong(File::lastModified));
             files.sort(Comparator.reverseOrder());
             files.foreach((file, i) -> {
